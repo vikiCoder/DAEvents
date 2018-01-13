@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.transition.Explode;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -63,50 +64,54 @@ public class LoginActivity extends AppCompatActivity {
     public void login(View view) {
 
         progress.setVisibility(View.VISIBLE);
+        String test = id.getText().toString();
         String email = id.getText().toString() + "@daiict.ac.in";
+        if(TextUtils.isEmpty(test)){
+            Toast.makeText(LoginActivity.this, "Please fill all the required fields", Toast.LENGTH_LONG).show();
+            progress.setVisibility(View.INVISIBLE);
+        }
+        else {
+            InputMethodManager imm = (InputMethodManager) this.getSystemService(this.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(progress.getWindowToken(), 0);
 
-        InputMethodManager imm = (InputMethodManager)this.getSystemService(this.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(progress.getWindowToken(), 0);
+            auth.signInWithEmailAndPassword(email, pass.getText().toString()).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
 
-        auth.signInWithEmailAndPassword(email, pass.getText().toString()).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-
-                if(task.isSuccessful()) {
-                    if(auth.getCurrentUser()!=null && !auth.getCurrentUser().isEmailVerified()){
-                        Toast.makeText(LoginActivity.this, "Please verify your email address:)", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    Toast.makeText(LoginActivity.this, "Logged in  successfully :)", Toast.LENGTH_LONG).show();
-
-                    Query query = dbRef.child("Users").orderByChild("id").equalTo(id.getText().toString());
-                    query.addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(DataSnapshot dataSnapshot) {
-                            String userKey = dataSnapshot.getChildren().iterator().next().getKey();
-                            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                            sharedPreferences.edit().putString("userKey", userKey).commit();
-
-                            ActivityOptionsCompat oc2 = ActivityOptionsCompat.makeSceneTransitionAnimation(LoginActivity.this);
-                            Intent i2 = new Intent(LoginActivity.this,MainActivity.class);
-                            startActivity(i2, oc2.toBundle());
-                            finish();
+                    if (task.isSuccessful()) {
+                        if (auth.getCurrentUser() != null && !auth.getCurrentUser().isEmailVerified()) {
+                            Toast.makeText(LoginActivity.this, "Please verify your email address:)", Toast.LENGTH_LONG).show();
+                            return;
                         }
 
-                        @Override
-                        public void onCancelled(DatabaseError databaseError) {
+                        Toast.makeText(LoginActivity.this, "Logged in  successfully :)", Toast.LENGTH_LONG).show();
 
-                        }
-                    });
+                        Query query = dbRef.child("Users").orderByChild("id").equalTo(id.getText().toString());
+                        query.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                String userKey = dataSnapshot.getChildren().iterator().next().getKey();
+                                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                                sharedPreferences.edit().putString("userKey", userKey).commit();
+
+                                ActivityOptionsCompat oc2 = ActivityOptionsCompat.makeSceneTransitionAnimation(LoginActivity.this);
+                                Intent i2 = new Intent(LoginActivity.this, MainActivity.class);
+                                startActivity(i2, oc2.toBundle());
+                                finish();
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+                    } else
+                        Toast.makeText(LoginActivity.this, "Something is wrong :(", Toast.LENGTH_LONG).show();
+
+                    progress.setVisibility(View.GONE);
                 }
-                else
-                    Toast.makeText(LoginActivity.this, "Something is wrong :(", Toast.LENGTH_LONG).show();
-
-                progress.setVisibility(View.GONE);
-            }
-        });
-
+            });
+        }
     }
 
 
@@ -124,3 +129,4 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 }
+
